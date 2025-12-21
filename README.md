@@ -66,10 +66,10 @@ ChatApp/
 - npm run dev
 
 
-$.env Front End 
+#.env Front End 
 VITE_API_URL=http://localhost:5001 {backend  server base url}
 
-$.env Backend 
+#.env Backend 
 SERVER_PORT=5001
 AZURE_STORAGE_ACCOUNT_NAME={storage_name}
 AZURE_STORAGE_ACCOUNT_KEY={storage_account_key}
