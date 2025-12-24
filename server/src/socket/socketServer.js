@@ -11,10 +11,18 @@ import { groupVideoSocket } from "./groupVideo.js";
 export const socketServer = (app) => {
   const server = http.createServer(app);
 
+  // const io = new Server(server, {
+  //   cors: {
+  //     origin: "*",
+  //     methods: ["GET", "POST"],
+  //     credentials: true,
+  //   },
+  //   transports: ["websocket", "polling"],
+  // });
+
   const io = new Server(server, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"],
+      origin: true, // ✅ same-origin in production
       credentials: true,
     },
     transports: ["websocket", "polling"],
@@ -97,6 +105,6 @@ export const socketServer = (app) => {
     }
   });
 
-  const port = process.env.SERVER_PORT || 5001;
-  server.listen(port, () => console.log(`Backend running on port ${port}`));
+  const PORT = process.env.PORT || 8080;
+  server.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 };

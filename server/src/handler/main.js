@@ -2,9 +2,8 @@ import express from "express";
 import helmet from "helmet";
 import xss from "xss-clean";
 import cors from "cors";
-import http from "http";
-import { Server } from "socket.io";
-import jwt from "jsonwebtoken";
+import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
 import authRoutes from "../routes/authRoutes.js";
@@ -12,44 +11,53 @@ import uploadRoutes from "../routes/uploadRoutes.js";
 import groupRoutes from "../routes/groupRoutes.js";
 import userRoutes from "../routes/userRoutes.js";
 import messageRoutes from "../routes/messageRoutes.js";
-import { chatSocket } from "../socket/chat.js";
-import { videoSocket } from "../socket/video.js";
-import { JWT_SECRET } from "../config/auth.js";
 import { socketServer } from "../socket/socketServer.js";
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const mainHandler = async () => {
   const app = express();
+  const PORT = process.env.PORT || 8080;
 
+  // 🔐 Security
   app.use(helmet());
   app.use(xss());
   app.use(express.json());
 
-  // ✅ FIXED CORS
+  // 🌐 CORS (Azure-safe)
   app.use(
     cors({
-      origin: "*", // frontend URL
+      origin: true, // SAME ORIGIN in production
       credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
 
-  // ✅ REQUIRED FOR PREFLIGHT
   app.options("*", cors());
 
+  // 📂 Static uploads
   app.use("/uploads", express.static("uploads"));
 
-  // ROUTES
+  // 🔗 API routes
   app.use("/auth", authRoutes);
   app.use("/file", uploadRoutes);
   app.use("/group", groupRoutes);
   app.use("/users", userRoutes);
   app.use("/message", messageRoutes);
 
-  // SOCKET SETUP
-  socketServer(app);
+  // 🌍 Serve React (Vite build)
+  const clientDistPath = path.join(__dirname, "../../client/dist");
+
+  app.use(express.static(clientDistPath));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  });
+
+  // 🔌 Socket + HTTP server
+  socketServer(app, PORT);
 };
 
 export default mainHandler;
