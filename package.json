@@ -4,7 +4,7 @@
   "scripts": {
     "postinstall": "npm install --prefix server && npm install --prefix client",
     "build": "npm run build --prefix client",
-    "start": "node server/index.js"
+    "start": "node server/src/index.js"
   },
   "engines": {
     "node": "20.x"
