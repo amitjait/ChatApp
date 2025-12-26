@@ -8,9 +8,7 @@ import dotenv from "dotenv";
 import { UserModel } from "../models/userModel.js";
 import { groupVideoSocket } from "./groupVideo.js";
 
-export const socketServer = (app) => {
-  const server = http.createServer(app);
-
+export const socketServer = (server) => {
   // const io = new Server(server, {
   //   cors: {
   //     origin: "*",
@@ -104,7 +102,4 @@ export const socketServer = (app) => {
       console.log(error);
     }
   });
-
-  const PORT = process.env.PORT || 8080;
-  server.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 };

@@ -5,6 +5,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import http from "http";
 
 import authRoutes from "../routes/authRoutes.js";
 import uploadRoutes from "../routes/uploadRoutes.js";
@@ -56,8 +57,11 @@ const mainHandler = async () => {
     res.sendFile(path.join(clientDistPath, "index.html"));
   });
 
+  const server = http.createServer(app);
   // 🔌 Socket + HTTP server
-  socketServer(app, PORT);
+  socketServer(server);
+
+  server.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 };
 
 export default mainHandler;
