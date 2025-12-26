@@ -1,10 +1,9 @@
 {
   "name": "chatapp",
   "private": true,
-  "type": "module",
   "scripts": {
-    "install-all": "npm install && cd client && npm install",
-    "build": "cd client && npm run build",
+    "postinstall": "npm install --prefix server && npm install --prefix client",
+    "build": "npm run build --prefix client",
     "start": "node server/index.js"
   },
   "engines": {
