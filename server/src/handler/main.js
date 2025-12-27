@@ -49,7 +49,7 @@ const mainHandler = async () => {
   app.use("/message", messageRoutes);
 
   // 🌍 Serve React (Vite build)
-  const clientDistPath = path.join(__dirname, "../../client/dist");
+  const clientDistPath = path.join(__dirname, "../../../client/dist");
 
   app.use(express.static(clientDistPath));
 
