@@ -1,47 +1,52 @@
-import bcrypt from "bcryptjs";
-import { readDB, writeDB } from "../database/db.js";
-
-const db = readDB();
+import { getPool } from "../config/azureDb.js";
 
 export class GroupModel {
+  /* ============ CREATE GROUP ============ */
   static async createGroup(body) {
     try {
       const { groupName, members = [], user } = body;
       const userId = user?.id;
 
-      if (!userId) {
-        throw new Error("userId is required");
-      }
+      if (!userId) throw new Error("userId is required");
       if (!groupName) throw new Error("groupName is required");
-      if (!Array.isArray(members)) throw new Error("Members must be an array");
 
-      db.groups ||= [];
+      const pool = await getPool();
 
-      // Ensure unique members including creator
+      // Ensure creator is part of group
       const uniqueMembers = Array.from(new Set([...members, userId]));
 
-      const group = {
-        id: Date.now().toString(),
-        name: groupName,
-        members: uniqueMembers,
-        createdBy: userId,
-        createdAt: new Date().toISOString(),
-      };
+      // 1️⃣ Insert group
+      const groupResult = await pool
+        .request()
+        .input("name", groupName)
+        .input("createdBy", userId).query(`
+          INSERT INTO groups (name, createdBy)
+          OUTPUT INSERTED.*
+          VALUES (@name, @createdBy)
+        `);
 
-      // Update users' groups
-      db.users ||= [];
-      const userMap = Object.fromEntries(db.users.map((u) => [u.id, u]));
+      const group = groupResult.recordset[0];
 
-      uniqueMembers.forEach((memberId) => {
-        const user = userMap[memberId];
-        if (!user) return;
+      // 2️⃣ Insert members into join table
+      for (const memberId of uniqueMembers) {
+        await pool
+          .request()
+          .input("groupId", group.id)
+          .input("userId", memberId).query(`
+            INSERT INTO group_members (groupId, userId)
+            VALUES (@groupId, @userId)
+          `);
+      }
 
-        user.groups ||= [];
-        if (!user.groups.includes(group.id)) user.groups.push(group.id);
-      });
+      // 3️⃣ Fetch member IDs only
+      const membersResult = await pool.request().input("groupId", group.id)
+        .query(`
+          SELECT userId
+          FROM group_members
+          WHERE groupId = @groupId
+        `);
 
-      db.groups.push(group);
-      writeDB(db);
+      group.members = membersResult.recordset.map((r) => r.userId);
 
       return {
         statusCode: 201,
@@ -52,57 +57,92 @@ export class GroupModel {
       console.error(err);
       return {
         statusCode: 500,
-        message: "Internal server error: Failed to create group",
+        message: err.message,
       };
     }
   }
 
+  /* ============ GET MY GROUPS ============ */
   static async getGroups(body) {
     try {
       const { user } = body;
       const userId = user?.id;
 
-      const db = readDB();
-      db.groups ||= [];
+      const pool = await getPool();
 
-      const groups = db.groups.filter((g) => g.members.includes(user.id));
+      // Get groups the user belongs to
+      const result = await pool.request().input("userId", userId).query(`
+          SELECT g.*
+          FROM groups g
+          INNER JOIN group_members gm
+            ON g.id = gm.groupId
+          WHERE gm.userId = @userId
+          ORDER BY g.createdAt DESC
+        `);
+
+      // For each group, fetch members (IDs only)
+      const groupsWithMembers = [];
+      for (const group of result.recordset) {
+        const membersResult = await pool.request().input("groupId", group.id)
+          .query(`
+            SELECT userId
+            FROM group_members
+            WHERE groupId = @groupId
+          `);
+
+        groupsWithMembers.push({
+          ...group,
+          members: membersResult.recordset.map((r) => r.userId),
+        });
+      }
 
       return {
         statusCode: 200,
-        message: "Groups fetched successfully",
-        data: groups,
+        data: groupsWithMembers,
       };
     } catch (err) {
       console.error(err);
-      throw new Error(`${err.message}`);
+      throw new Error(err.message);
     }
   }
 
+  /* ============ GET GROUP MEMBERS ============ */
   static async getMembersByGroupId(body) {
     try {
       const { groupId, user } = body;
       const userId = user?.id;
 
-      const db = readDB();
-      db.groups ||= [];
-      db.users ||= [];
+      const pool = await getPool();
 
-      const group = db.groups.find((g) => g.id === groupId);
+      // Check if requesting user is a member
+      const check = await pool
+        .request()
+        .input("groupId", groupId)
+        .input("userId", userId).query(`
+          SELECT 1
+          FROM group_members
+          WHERE groupId = @groupId AND userId = @userId
+        `);
 
-      if (!group) throw new Error("Group not found");
-      if (!group.members.includes(userId))
+      if (!check.recordset.length) {
         throw new Error("You are not a member of this group");
+      }
 
-      const members = db.users.filter((u) => group.members.includes(u.id));
+      // Fetch member IDs only
+      const membersResult = await pool.request().input("groupId", groupId)
+        .query(`
+          SELECT userId
+          FROM group_members
+          WHERE groupId = @groupId
+        `);
 
       return {
         statusCode: 200,
-        message: "Members fetched successfully",
-        data: members,
+        data: membersResult.recordset.map((r) => r.userId),
       };
     } catch (err) {
       console.error(err);
-      throw new Error(`${err.message}`);
+      throw new Error(err.message);
     }
   }
 }

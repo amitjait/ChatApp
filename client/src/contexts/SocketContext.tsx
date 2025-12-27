@@ -79,7 +79,6 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       const result = await fetchGroupsApi();
       if (result?.status === 200) {
         setGroups(result?.data?.data);
-        console.log({ result });
       } else {
         notifyError({ message: "Failed to fetch groups" });
       }
@@ -102,10 +101,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     /* ---------- RECEIVE PRIVATE MESSAGE ---------- */
     s.on("private_message", (data: any) => {
-      console.log({ data });
       const { id, senderId, senderName, receiverId, content, timestamp } = data;
       const msg: Message = {
-        id: id || `msg-${Date.now()}`,
+        id: id || `${Date.now()}`,
         senderId: senderId,
         senderName: senderName,
         receiverId: receiverId,
@@ -128,7 +126,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         fileName,
       } = data;
       const msg: Message = {
-        id: id || `msg-${Date.now()}`,
+        id: id || `${Date.now()}`,
         senderId: senderId,
         senderName: senderName,
         receiverId: receiverId,
@@ -142,17 +140,16 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     /* ---------- RECEIVE GROUP MESSAGE ---------- */
     s.on("group_message", (data: any) => {
-      console.log({ data });
       const { id, senderId, senderName, groupId, content, timestamp } = data;
       const msg: Message = {
-        id: id || `msg-${Date.now()}`,
+        id: id || `${Date.now()}`,
         senderId: senderId,
         senderName: senderName,
         groupId: groupId,
         content: content || "",
         timestamp: timestamp || new Date(data.time).getTime(),
       };
-      console.log({ msg });
+
       setMessages((prev) => [...prev, msg]);
     });
 
@@ -169,7 +166,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         fileName,
       } = data;
       const msg: Message = {
-        id: id || `msg-${Date.now()}`,
+        id: id || `${Date.now()}`,
         senderId: senderId,
         senderName: senderName,
         groupId: groupId,
@@ -182,8 +179,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     });
 
     s.on("users_online", (data: { count: number; users: string[] }) => {
-      const { count, users } = data;
-      console.log({ count });
+      const { users } = data;
+
       setOnlineUsers((prev) => new Set([...prev, ...users]));
     });
 
@@ -226,7 +223,6 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [fetchGroupFlag]);
 
-  console.log({ messages });
   /* ---------------- SEND FUNCTIONS ---------------- */
   const sendPrivateMessage = async (receiverId: string, content: string) => {
     try {
@@ -242,15 +238,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         const { id, senderId, senderName, receiverId, content, timestamp } =
           data;
         const msg: Message = {
-          id: id || `msg-${Date.now()}`,
+          id: id || `${Date.now()}`,
           senderId: senderId || user.id,
           senderName: senderName || "",
           receiverId: receiverId,
           content: content || "",
           timestamp: timestamp || new Date(data.time).getTime(),
         };
-
-        console.log({ msg });
 
         socket.emit("private_message", {
           toUserId: receiverId,
@@ -292,7 +286,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       } = res?.data?.data;
 
       const msg: Message = {
-        id: id || `msg-${Date.now()}`,
+        id: id || `${Date.now()}`,
         senderId: senderId,
         senderName: senderName,
         receiverId,
@@ -322,7 +316,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
           res?.data?.data;
 
         const msg: Message = {
-          id: id || `msg-${Date.now()}`,
+          id: id || `${Date.now()}`,
           senderId: senderId,
           senderName: senderName,
           groupId,
@@ -331,7 +325,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         };
 
         socket.emit("group_message", { groupId, msg });
-        console.log({ msg });
+
         setMessages((prev) => [...prev, msg]);
       } else {
         notifyError({ message: "Failed to send message" });
@@ -357,11 +351,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       blobName,
     });
 
-    console.log({ res });
     if (res.status === 200) {
       const { id, senderId, senderName, groupId, timestamp } = res?.data?.data;
       const msg: Message = {
-        id: id || `msg-${Date.now()}`,
+        id: id || `${Date.now()}`,
         senderId: senderId,
         senderName: senderName,
         groupId,

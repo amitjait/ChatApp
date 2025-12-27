@@ -9,6 +9,7 @@ export const isSameDay = (ts1: number, ts2: number) => {
 };
 
 export const formatDayLabel = (timestamp: number) => {
+  timestamp = parseInt(timestamp.toString());
   const date = new Date(timestamp);
   const today = new Date();
   const yesterday = new Date();

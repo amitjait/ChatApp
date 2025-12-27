@@ -43,6 +43,7 @@ export const MessageList = ({ messages }: MessageListProps) => {
   }, [messages]);
 
   const formatTime = (timestamp: number) => {
+    timestamp = parseInt(timestamp.toString());
     const date = new Date(timestamp);
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",

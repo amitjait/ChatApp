@@ -1,32 +1,45 @@
-import bcrypt from "bcryptjs";
-import { readDB, writeDB } from "../database/db.js";
-
-const db = readDB();
+import { getPool } from "../config/azureDb.js";
 
 export class MessageModel {
+  /* ================= PRIVATE MESSAGE ================= */
   static async savePrivateMessage(body) {
     try {
-      const { receiverId, content, fileUrl, fileName, user, blobName } = body;
-      console.log({ blobName });
-      const message = {
-        id: `msg-${Date.now()}`,
-        senderId: user.id,
-        senderName: user.name,
+      const {
         receiverId,
-        content: content || "",
-        fileUrl,
-        fileName,
-        timestamp: Date.now(),
-        blobName,
-      };
+        content = null,
+        fileUrl = null,
+        fileName = null,
+        blobName = null,
+        user,
+      } = body;
 
-      db.messages.push(message);
-      writeDB(db);
+      const pool = await getPool();
+
+      const result = await pool
+        .request()
+        .input("senderId", user.id)
+        .input("senderName", user.name)
+        .input("receiverId", receiverId)
+        .input("content", content)
+        .input("fileUrl", fileUrl)
+        .input("fileName", fileName)
+        .input("blobName", blobName)
+        .input("timestamp", Date.now()).query(`
+          INSERT INTO messages (
+            senderId, senderName, receiverId,
+            content, fileUrl, fileName, blobName, timestamp
+          )
+          OUTPUT INSERTED.*
+          VALUES (
+            @senderId, @senderName, @receiverId,
+            @content, @fileUrl, @fileName, @blobName, @timestamp
+          )
+        `);
 
       return {
         statusCode: 201,
         message: "Message saved successfully",
-        data: message,
+        data: result.recordset[0],
       };
     } catch (error) {
       console.error(error);
@@ -37,10 +50,17 @@ export class MessageModel {
     }
   }
 
-  /* ---------------- SAVE GROUP MESSAGE ---------------- */
+  /* ================= GROUP MESSAGE ================= */
   static async saveGroupMessage(body) {
     try {
-      const { groupId, content, fileUrl, fileName, user } = body;
+      const {
+        groupId,
+        content = null,
+        fileUrl = null,
+        fileName = null,
+        blobName = null,
+        user,
+      } = body;
 
       if (!groupId) {
         return {
@@ -49,23 +69,32 @@ export class MessageModel {
         };
       }
 
-      const message = {
-        id: `msg-${Date.now()}`,
-        senderId: user.id,
-        senderName: user.name,
-        groupId,
-        content: content || "",
-        fileUrl,
-        fileName,
-        timestamp: Date.now(),
-      };
+      const pool = await getPool();
 
-      db.messages.push(message);
-      writeDB(db);
+      const result = await pool
+        .request()
+        .input("senderId", user.id)
+        .input("senderName", user.name)
+        .input("groupId", groupId)
+        .input("content", content)
+        .input("fileUrl", fileUrl)
+        .input("fileName", fileName)
+        .input("blobName", blobName)
+        .input("timestamp", Date.now()).query(`
+          INSERT INTO messages (
+            senderId, senderName, groupId,
+            content, fileUrl, fileName, blobName, timestamp
+          )
+          OUTPUT INSERTED.*
+          VALUES (
+            @senderId, @senderName, @groupId,
+            @content, @fileUrl, @fileName, @blobName, @timestamp
+          )
+        `);
 
       return {
         statusCode: 201,
-        data: message,
+        data: result.recordset[0],
       };
     } catch (error) {
       console.error(error);
@@ -76,36 +105,27 @@ export class MessageModel {
     }
   }
 
+  /* ================= GET PRIVATE MESSAGES ================= */
   static async getPrivateMessages({ user, receiverId }) {
     try {
-      const chatMessages = db.messages.filter(
-        (msg) =>
-          (msg.senderId === user.id && msg.receiverId === receiverId) ||
-          (msg.senderId === receiverId && msg.receiverId === user.id)
-      );
+      const pool = await getPool();
+
+      const result = await pool
+        .request()
+        .input("userId", user.id)
+        .input("receiverId", receiverId).query(`
+          SELECT *
+          FROM messages
+          WHERE
+            (senderId = @userId AND receiverId = @receiverId)
+            OR
+            (senderId = @receiverId AND receiverId = @userId)
+          ORDER BY timestamp ASC
+        `);
 
       return {
         statusCode: 200,
-        data: chatMessages,
-      };
-    } catch (error) {
-      console.error(error);
-      return {
-        statusCode: 500,
-        message: error?.message,
-      };
-    }
-  }
-
-  static async getGroupMessages(groupId) {
-    try {
-      const groupMessages = db.messages.filter(
-        (msg) => msg.groupId === groupId
-      );
-
-      return {
-        statusCode: 200,
-        data: groupMessages,
+        data: result.recordset,
       };
     } catch (error) {
       console.error(error);
@@ -116,13 +136,47 @@ export class MessageModel {
     }
   }
 
+  /* ================= GET GROUP MESSAGES ================= */
+  static async getGroupMessages(groupId) {
+    try {
+      const pool = await getPool();
+
+      const result = await pool.request().input("groupId", groupId).query(`
+          SELECT *
+          FROM messages
+          WHERE groupId = @groupId
+          ORDER BY timestamp ASC
+        `);
+
+      return {
+        statusCode: 200,
+        data: result.recordset,
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        statusCode: 500,
+        message: error.message,
+      };
+    }
+  }
+
+  /* ================= GET ALL MY MESSAGES ================= */
   static async getAllMyMessages(user) {
     try {
-      const myMessages = db.messages.filter(
-        (msg) => msg.senderId === user.id || msg.receiverId === user.id
-      );
+      const pool = await getPool();
 
-      return myMessages;
+      const result = await pool.request().input("userId", user.id).query(`
+          SELECT *
+          FROM messages
+          WHERE senderId = @userId OR receiverId = @userId
+          ORDER BY timestamp DESC
+        `);
+
+      return {
+        statusCode: 200,
+        data: result.recordset,
+      };
     } catch (error) {
       console.error(error);
       return {
