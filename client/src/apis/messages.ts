@@ -5,7 +5,7 @@ export const getPrivateMessages = async (
   userId: string
 ): Promise<ApiResponse<any>> => {
   try {
-    const response = await axiosInstance.get(`/message/private/${userId}`);
+    const response = await axiosInstance.get(`message/private/${userId}`);
 
     return {
       status: 200,
@@ -23,7 +23,7 @@ export const getGroupMessages = async (
   groupId: string
 ): Promise<ApiResponse<any>> => {
   try {
-    const response = await axiosInstance.get(`/message/group/${groupId}`);
+    const response = await axiosInstance.get(`message/group/${groupId}`);
 
     return {
       status: 200,
@@ -39,7 +39,7 @@ export const getGroupMessages = async (
 
 export const getAllMyMessages = async (): Promise<ApiResponse<any>> => {
   try {
-    const response = await axiosInstance.get("/message/me");
+    const response = await axiosInstance.get("message/me");
     return {
       status: 200,
       data: response?.data,
@@ -61,7 +61,7 @@ export const savePrivateMessage = async (
   payload: SavePrivateMessagePayload
 ): Promise<ApiResponse<any>> => {
   try {
-    const response = await axiosInstance.post("/message/private", payload); // TODO: FIX THIS
+    const response = await axiosInstance.post("message/private", payload); // TODO: FIX THIS
     return {
       status: 200,
       data: response?.data,
@@ -83,7 +83,7 @@ export const saveGroupMessage = async (
   payload: SaveGroupMessagePayload
 ): Promise<ApiResponse<any>> => {
   try {
-    const response = await axiosInstance.post("/message/group", payload);
+    const response = await axiosInstance.post("message/group", payload);
     return {
       status: 200,
       data: response?.data,
@@ -105,7 +105,7 @@ export const savePrivateFile = async (
   payload: SavePrivateFilePayload
 ): Promise<ApiResponse<any>> => {
   try {
-    const response = await axiosInstance.post("/message/private", payload);
+    const response = await axiosInstance.post("message/private", payload);
     console.log({ response });
     return {
       status: 200,
@@ -128,7 +128,7 @@ export const saveGroupFile = async (
   payload: SaveGroupFilePayload
 ): Promise<ApiResponse<any>> => {
   try {
-    const response = await axiosInstance.post("/message/group", payload);
+    const response = await axiosInstance.post("message/group", payload);
     console.log({ response });
     return {
       status: 200,
@@ -150,7 +150,7 @@ export const uploadFile = async (
     console.log({ blobName });
     formData.append("blobName", blobName);
 
-    const response = await axiosInstance.post("/file/upload", formData);
+    const response = await axiosInstance.post("file/upload", formData);
     console.log({ response });
     return {
       status: 200,
@@ -166,7 +166,7 @@ export const generateSasUrl = async (
   fileName: string
 ): Promise<ApiResponse<any>> => {
   try {
-    const response = await axiosInstance.post("/file/generateSasUrl", {
+    const response = await axiosInstance.post("file/generateSasUrl", {
       fileName,
     });
     console.log({ response });

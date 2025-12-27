@@ -2,7 +2,7 @@ import { axiosInstance } from "./configs/axiosConfig";
 
 const createGroup = async (groupName: string, members: string[]) => {
   try {
-    const response = await axiosInstance.post("/group/create", {
+    const response = await axiosInstance.post("group/create", {
       groupName,
       members,
     });
@@ -19,7 +19,7 @@ const createGroup = async (groupName: string, members: string[]) => {
 
 const getGroups = async () => {
   try {
-    const response = await axiosInstance.get("/group/get");
+    const response = await axiosInstance.get("group/get");
 
     return {
       status: 200,
@@ -33,7 +33,7 @@ const getGroups = async () => {
 
 const getMembersByGroupId = async (groupId: string) => {
   try {
-    const response = await axiosInstance.get(`/group/getMembers/${groupId}`);
+    const response = await axiosInstance.get(`group/getMembers/${groupId}`);
 
     return {
       status: 200,

@@ -7,7 +7,7 @@ export interface ApiResponse<T> {
 
 export const fetchUsersApi = async (): Promise<ApiResponse<any>> => {
   try {
-    const res = await axiosInstance.get("/users");
+    const res = await axiosInstance.get("users");
 
     return {
       status: 200,
@@ -21,7 +21,7 @@ export const fetchUsersApi = async (): Promise<ApiResponse<any>> => {
 
 export const fetchGroupsApi = async (): Promise<ApiResponse<any>> => {
   try {
-    const res = await axiosInstance.get("/group");
+    const res = await axiosInstance.get("group");
 
     return {
       status: 200,
